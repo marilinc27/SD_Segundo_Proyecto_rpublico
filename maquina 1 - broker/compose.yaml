@@ -1,0 +1,42 @@
+name: espia
+services:
+  broker:
+    image: emqx/emqx:5.8.6
+    container_name: emqx-broker
+    hostname: broker
+    environment:
+      EMQX_NODE__NAME: emqx@127.0.0.1
+      EMQX_RETAINER__BACKEND__STORAGE_TYPE: disc
+      EMQX_AUTHORIZATION__FILE__ENABLE: "true"
+      EMQX_AUTHORIZATION__FILE__PATH: "/opt/emqx/etc/acl.conf"
+      EMQX_AUTHORIZATION__NO_MATCH: deny          # lo que no matchea el ACL se rechaza
+      EMQX_AUTHORIZATION__DENY_ACTION: disconnect
+      # TLS
+      EMQX_LISTENERS__SSL__DEFAULT__SSL_OPTIONS__KEYFILE: "/opt/emqx/etc/certs/server.key"
+      EMQX_LISTENERS__SSL__DEFAULT__SSL_OPTIONS__CERTFILE: "/opt/emqx/etc/certs/server.pem"
+      EMQX_LISTENERS__SSL__DEFAULT__SSL_OPTIONS__CACERTFILE: "/opt/emqx/etc/certs/cacert.pem"
+      EMQX_LISTENERS__TCP__DEFAULT__ENABLE: "false"   # apaga MQTT sin TLS
+    ports:
+      - "8883:8883"     # MQTT con TLS
+      - "18083:18083"   # panel
+    volumes:
+      - datos-espia:/opt/emqx/data
+      - ./config/acl.conf:/opt/emqx/etc/acl.conf
+      - ./private:/opt/emqx/etc/certs:ro
+    restart: unless-stopped
+
+  receptor:
+    build: ./webhook
+    environment:
+      WEBHOOK_TOKEN: "${WEBHOOK_TOKEN:?Falta WEBHOOK_TOKEN en .env}"
+    ports:
+      - "5000:5000"
+    volumes:
+      - datos-receptor:/data
+    restart: unless-stopped
+
+volumes:
+  datos-espia:
+    name: datos-espia
+  datos-receptor:
+    name: datos-espia-receptor

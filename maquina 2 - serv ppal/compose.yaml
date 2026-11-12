@@ -1,0 +1,51 @@
+name: espia-servicio
+
+# Servicio central del Juego del Espia + su base de datos (salas y palabras).
+# Se conecta al broker por MQTT con TLS,
+# con el usuario "servicio", y a la BD (en este mismo compose) como cliente SQL.
+services:
+  servicio:
+    build: .                      # arma la imagen con el Dockerfile de esta carpeta
+    environment:
+      BROKER: sd-2026.tailb9d8eb.ts.net   # el nombre que figura en el certificado del broker
+      PUERTO: "18813"                     # la catedra lo reenvia al 8883 (MQTT con TLS) de alumno13
+      CA_CERT: /certs/cacert.pem  # certificado de la CA del grupo: verifica que el broker sea el verdadero
+      MQTT_USUARIO: servicio      # usuario del servicio en el broker (R5)
+      MQTT_CLAVE: ${MQTT_CLAVE}   # sale del .env (NO va al repositorio)
+      SEGUNDOS_TURNO: "30"        # tiempo de cada jugador para dar su pista (0 = sin limite)
+      SEGUNDOS_VOTACION: "45"     # (0 = sin limite)
+      DB_HOST: bd                 # la BD de este mismo compose (DNS interno de Docker)
+      DB_NOMBRE: juego
+      DB_USUARIO: servicio_juego  # usuario de SOLO LECTURA
+      DB_CLAVE: ${SERVICIO_DB_CLAVE}
+      ARCHIVO_ESTADO: /datos/estado.json # <-- FIX: Explicita la ruta del estado
+    volumes:
+      - ./cacert.pem:/certs/cacert.pem:ro   # el certificado entra al container (solo lectura)
+      - datos-servicio:/datos                 # <-- FIX: Se monta el volumen para persistir el estado.json      
+    depends_on:
+      bd:
+        condition: service_healthy   # arranca cuando la BD responde (y el codigo igual reintenta)
+    restart: unless-stopped
+    # Sin "ports": el servicio no recibe conexiones, solo se conecta al broker y a la BD.
+
+  bd:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: juego
+      POSTGRES_USER: admin_juego                 # administrador (para cargar palabras)
+      POSTGRES_PASSWORD: ${BD_ADMIN_CLAVE}
+      SERVICIO_DB_CLAVE: ${SERVICIO_DB_CLAVE}    # la usa bd/02-usuario-servicio.sh
+    volumes:
+      - datos-juego:/var/lib/postgresql/data     # salas y palabras sobreviven al container
+      - ./bd:/docker-entrypoint-initdb.d:ro      # scripts: tablas, datos y usuario (solo la 1.a vez)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_juego -d juego"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    # Sin "ports": la BD NO es accesible desde afuera; solo la ve el servicio por la red interna.
+
+volumes:
+  datos-juego:
+  datos-servicio: # <-- FIX: Se declara el nuevo volumen para el servicio  

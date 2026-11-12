@@ -1,0 +1,7 @@
+venv/
+.venv/
+local/
+web/
+.env
+__pycache__/cliente_jugador.cpython-310.pyc
+.env

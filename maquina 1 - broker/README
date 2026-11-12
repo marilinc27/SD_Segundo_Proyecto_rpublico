@@ -1,0 +1,22 @@
+# Broker EMQX — Juego Espía
+
+## Directorio - Contiene los archivos del servidor del broker
+
+```
+espia/
+├── compose.yaml       
+├── config/acl.conf     
+└── private/            # certificados TLS
+    ├── cacert.pem      # Se sube solo para el servicio
+    ├── server.pem
+    └── server.key
+ 
+
+## config/acl.conf
+
+## Levantar sobre espia/
+docker compose up -d
+
+## Autenticación
+Los usuarios no se guardan acá: EMQX consulta una base PostgreSQL de la otra máquina (tabla `mqtt_user`, hash `sha256`). Se configura desde el panel, en Control de acceso → Autenticación.
+

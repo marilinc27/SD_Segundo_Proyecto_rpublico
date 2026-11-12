@@ -1,0 +1,14 @@
+name: espia-receptor
+services:
+  receptor:
+    build: .
+    environment:
+      WEBHOOK_TOKEN: "${WEBHOOK_TOKEN:?Falta WEBHOOK_TOKEN en el archivo .env}"
+    ports:
+      - "8080:5000"
+    volumes:
+      - datos-receptor:/data
+    restart: unless-stopped
+volumes:
+  datos-receptor:
+    name: datos-espia-receptor
