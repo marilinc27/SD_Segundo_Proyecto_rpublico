@@ -588,8 +588,8 @@ def pedido_clue(cliente, nombre_sala, usuario, pedido):
     if texto == "" or len(texto) > LARGO_MAXIMO_PISTA:
         avisar_jugador(cliente, nombre_sala, usuario, f"La pista tiene que tener entre 1 y {LARGO_MAXIMO_PISTA} letras.")
         return
-    # No se puede repetir una pista ya dicha en esta partida (esta ronda o las anteriores),
-    # ni usar la palabra secreta. Se rechaza SIN pasar el turno: el jugador prueba con otra.
+    # No se puede repetir una pista ya dicha en esta partida (esta ronda o las anteriores).
+    # Se rechaza SIN pasar el turno: el jugador prueba con otra.
     pista = normalizar(texto)
     dichas = list(sala["pistas"].values())
     for vieja in sala["historial"]:
@@ -598,13 +598,6 @@ def pedido_clue(cliente, nombre_sala, usuario, pedido):
         print(f"[{nombre_sala}] Pista repetida rechazada: {usuario} -> {texto}")
         avisar_jugador(cliente, nombre_sala, usuario, "Esa pista ya se dijo en esta partida. Proba con otra.")
         return
-    palabra = normalizar(sala["palabra"])
-    # Con espacios alrededor, "mar" encuentra "el mar azul" pero no "marron"
-    if f" {palabra} " in f" {pista} " or pista.replace(" ", "") == palabra.replace(" ", ""):
-        print(f"[{nombre_sala}] Pista con la palabra secreta rechazada: {usuario} -> {texto}")
-        avisar_jugador(cliente, nombre_sala, usuario, "No podes usar la palabra secreta en la pista.")
-        return
-
     sala["pistas"][usuario] = texto
     avisar_sala(cliente, nombre_sala, f"{usuario} dio su pista: {texto}")
     pasar_turno(cliente, nombre_sala)

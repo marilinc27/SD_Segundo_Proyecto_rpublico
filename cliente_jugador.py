@@ -16,11 +16,6 @@
 #   BROKER, PUERTO      broker MQTT con TLS (por defecto el del grupo por sd-2026)
 #   CA_CERT             certificado de la CA; vacio = sin TLS (solo para un broker local)
 #   API_REGISTRO        API de registro de usuarios
-#
-# HILOS (ver el cuaderno, "Productor-consumidor"):
-#   - el hilo principal corre tkinter: es el UNICO que toca las ventanas;
-#   - el hilo de paho y el hilo del registro solo dejan avisos en la "cola";
-#   - revisar_cola() (hilo principal) los saca cada 100 ms y actualiza la pantalla.
 
 import json
 import os
@@ -525,20 +520,13 @@ def problema_con_pista(texto):
     pista = normalizar(texto)
     if pista == "":
         return "La pista tiene que tener alguna letra o numero."
-    # 1) Que no se haya dicho antes en esta partida (esta ronda y las anteriores)
+    # Que no se haya dicho antes en esta partida (esta ronda y las anteriores)
     dichas = list(estado.get("pistas", {}).values())
     for vieja in estado.get("historial", []):
         dichas += list(vieja.get("pistas", {}).values())
     for dicha in dichas:
         if dicha and normalizar(str(dicha)) == pista:
             return f"La pista \"{dicha}\" ya se dijo en esta partida. Proba con otra."
-    # 2) Que no sea la palabra secreta (solo la conozco si no soy el espia)
-    secreto = secretos.get(mi_sala)
-    if secreto and secreto.get("partida") == estado.get("partida") and secreto.get("palabra"):
-        palabra = normalizar(secreto["palabra"])
-        # Con espacios alrededor, "mar" encuentra "el mar azul" pero no "marron"
-        if f" {palabra} " in f" {pista} " or pista.replace(" ", "") == palabra.replace(" ", ""):
-            return "No podes usar la palabra secreta en la pista."
     return None
 
 
@@ -673,8 +661,10 @@ def dibujar_juego():
     else:
         etiqueta_turnos.config(text="")
 
-    # --- Reloj: arranca de nuevo SOLO si cambio el turno o la fase (ver cuaderno)
-    clave = (estado.get("partida"), estado.get("ronda"), fase, turno)
+    # --- Reloj: arranca de nuevo SOLO si cambio el turno o la fase
+    # "segundos" entra en la clave: si el servicio recalcula lo que queda (porque hubo un corte),
+    # manda otro numero y la cuenta arranca de nuevo con el valor correcto.
+    clave = (estado.get("partida"), estado.get("ronda"), fase, turno, estado.get("segundos"))
     if clave != clave_reloj:
         clave_reloj = clave
         etiqueta_error_pista.config(text="")      # el error de una pista vieja no queda colgado
