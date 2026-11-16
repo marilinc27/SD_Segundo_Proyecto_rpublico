@@ -22,21 +22,6 @@ services:
       retries: 10
     restart: unless-stopped
 
-  registro:
-    build:
-      context: ./auth
-    environment:
-      DB_HOST: postgres
-      DB_PORT: 5432
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-    stdin_open: true
-    tty: true
-    depends_on:
-      postgres:
-        condition: service_healthy
-
   api:
     build:
       context: ./api
