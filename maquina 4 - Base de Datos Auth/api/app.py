@@ -38,7 +38,8 @@ def registrar(datos: RegistroRequest):
     if not password:
         raise HTTPException(status_code=400, detail="La contraseña no puede estar vacía")
 
-    password_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    salt = os.urandom(16).hex()
+    password_hash = hashlib.sha256((password + salt).encode("utf-8")).hexdigest()
 
     try:
         with psycopg.connect(
@@ -63,7 +64,7 @@ def registrar(datos: RegistroRequest):
                         (username, password_hash, salt, is_superuser)
                     VALUES (%s, %s, %s, %s)
                     """,
-                    (username, password_hash, "", False),
+                    (username, password_hash, salt, False),
                 )
             conn.commit()
 
